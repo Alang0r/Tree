@@ -1,5 +1,6 @@
 package models
 
+const tablePerson = "Person"
 type Person struct {
 	id        int
 	DateBirth int
@@ -9,4 +10,8 @@ type Person struct {
 	Lastname  string
 	MotherId  int
 	FatherId  int
+}
+
+func (Person) GetTableName() string {
+	return tablePerson
 }
