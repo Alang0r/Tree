@@ -7,6 +7,6 @@ import (
 //main 
 func main() {
 	srv := lib.Service{}
-	srv.SetName("Informer test")
+	srv.SetName("Informer")
 	srv.Start()
 }
