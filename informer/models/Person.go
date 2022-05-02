@@ -1,7 +1,6 @@
 package models
 
-
-type Human struct {
+type Person struct {
 	id        int
 	DateBirth int
 	Datedeath int
