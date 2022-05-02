@@ -11,7 +11,7 @@ func main() {
 	srv := lib.Service{}
 	srv.SetName("Informer")
 
-	//srv.Configure()
+	srv.Configure()
 	srv.Start()
 	// newPerson := models.Person{
 
