@@ -1,5 +1,6 @@
-Host: localhost
-Port: 5432
-User: Postgres
-Password: Postgres
-DBName: Tree 
+gorm_config:
+  host: localhost
+  port: 5432
+  user: Postgres
+  password: Postgres
+  dbname: Tree 

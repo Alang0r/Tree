@@ -12,7 +12,7 @@ import (
 	"Tree/lib/log"
 
 	"gopkg.in/yaml.v3"
-	//"gorm.io/driver/postgres"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -43,42 +43,45 @@ type Properties struct {
 }
 
 func (srv *Service) Configure() {
-	//TODO: 1)подтягиваем конфиг из файла
-	//TODO: 2)настраиваем всё необходимое- логи, подключение к БД, ...
-	//config := ServiceConfig{}
 	//Инициализируем логи
 	srv.Log.Init(srv.Name)
 
+	//загружаем настройки
 	yfile, err := ioutil.ReadFile("config.yaml")
 	if err != nil {
 		srv.Log.Fatal(err)
 	}
-	data := make(map[interface{}]interface{})
-	err2 := yaml.Unmarshal(yfile, &data)
-	if err2 != nil {
-		srv.Log.Fatal(err2)
-	}
-	for k, v := range data {
-		srv.Log.Infof("%s -> %d\n", k, v)
-	}
 
+	cfg := ServiceConfig{}
+	err = yaml.Unmarshal(yfile, &cfg)
+    if err != nil {
+        srv.Log.Fatalf("error: %v", err)
+    }
+	srv.Log.Info(cfg)
+
+	//подключаемся к БД
+
+	connectionString := "host="
+	connectionString += cfg.Gorm_config.Host +
+		" user=" + cfg.Gorm_config.User +
+		" password=" + cfg.Gorm_config.Password +
+		" dbname=" + cfg.Gorm_config.DBName +
+		" port=" + cfg.Gorm_config.Port
 	// dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
-	// DB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	// if err != nil {
-
-	// }
-	// DB.Debug()
+	DB, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
+	if err != nil {
+		srv.Log.Fatal(err)
+	}
+	DB.Debug()
 }
 
 type ServiceConfig struct {
-	GormConfig
+	Gorm_config GormConfig
 }
 type GormConfig struct {
-	Host     string `ini:"host"`
-	Port     string `ini:"port"`
-	User     string `ini:"user"`
-	Password string `ini:"password"`
-	DBName   string `ini:"dbname"`
-	Sslmode  bool   `ini:"sslmode"`
-	TimeZone string `ini:"timezone"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	DBName   string `yaml:"dbname"`
 }
