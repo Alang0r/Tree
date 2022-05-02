@@ -13,11 +13,11 @@ import (
 )
 
 type Service struct {
-	Settings ServiceSettings
+	Properties
 }
 
 func (srv *Service) SetName(name string) {
-	srv.Settings.Name = name
+	srv.Name = name
 }
 
 func (srv *Service) Listen() {
@@ -25,14 +25,13 @@ func (srv *Service) Listen() {
 	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 func (srv *Service) Start() {
-	fmt.Println(srv.Settings.Name)
+	fmt.Println(srv.Name)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "URL.Path = %q\n", r.URL.Path)
 }
 
-type ServiceSettings struct {
+type Properties struct {
 	Name string
-
 }
