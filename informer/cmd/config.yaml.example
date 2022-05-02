@@ -2,4 +2,4 @@ Host: localhost
 Port: 5432
 User: Postgres
 Password: Postgres
-DBName: Tree 
+DBName: Postgres
