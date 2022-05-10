@@ -31,6 +31,7 @@ func (srv *Service) Start() {
 	srv.Log.Infof("Start of %s", srv.Name)
 	defer srv.Log.Infof("Finish of %s", srv.Name)
 
+	//создаем очередь, если не было ранее
 	_, err := srv.RabbitChannel.QueueDeclare(
 		srv.Name+"-queue",
 		false,
@@ -39,6 +40,7 @@ func (srv *Service) Start() {
 		false,
 		nil,
 	)
+	
 	//Читаем сообщение и вызываем соответствующий запрос / возвращаем ошибку, если запрсоа нет
 	msgs, err := srv.RabbitChannel.Consume(
 		srv.Name+"-queue",
