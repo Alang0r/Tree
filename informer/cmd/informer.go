@@ -1,9 +1,7 @@
 package main
 
 import (
-	//"Tree/informer/models"
 	"Tree/lib/service"
-	//"fmt"
 )
 
 //main

@@ -29,7 +29,8 @@ func (srv *Service) Start() {
 
 	//TODO: 3)подписываемся на очередь запросов и слушаем
 
-	srv.Log.Infof("Тест лога обернутого")
+	srv.Log.Infof("Start of %s", srv.Name)
+	defer srv.Log.Infof("Finish of %s", srv.Name)
 
 }
 
@@ -57,7 +58,6 @@ func (srv *Service) Configure() {
     if err != nil {
         srv.Log.Fatalf("error: %v", err)
     }
-	srv.Log.Info(cfg)
 
 	//подключаемся к БД
 
@@ -67,13 +67,13 @@ func (srv *Service) Configure() {
 		" password=" + cfg.Gorm_config.Password +
 		" dbname=" + cfg.Gorm_config.DBName +
 		" port=" + cfg.Gorm_config.Port
-	// dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
 	DB, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
 	if err != nil {
 		srv.Log.Fatal(err)
 	}
 	DB.Debug()
 }
+
 
 type ServiceConfig struct {
 	Gorm_config GormConfig
