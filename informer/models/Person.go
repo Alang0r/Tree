@@ -3,7 +3,7 @@ package models
 const tablePerson = "person"
 
 type Person struct {
-	id        int    `gorm: "id"`
+	Id        int    `gorm: "id"`
 	DateBirth int    `gorm: "date_birth"`
 	Datedeath int    `gorm: date_death"`
 	FirstName string `gorm: "first_name"`

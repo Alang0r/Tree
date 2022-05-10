@@ -7,10 +7,12 @@
 package lib
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"Tree/lib/log"
 
+	"github.com/streadway/amqp"
 	"gopkg.in/yaml.v3"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -32,11 +34,9 @@ func (srv *Service) Start() {
 	srv.Log.Infof("Start of %s", srv.Name)
 	defer srv.Log.Infof("Finish of %s", srv.Name)
 
-}
+	//Читаем сообщение и вызываем соответствующий запрос / возвращаем ошибку, если запрсоа нет
 
-// func handler(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Fprintf(w, "URL.Path = %q\n", r.URL.Path)
-// }
+}
 
 type Properties struct {
 	Name string
@@ -55,33 +55,86 @@ func (srv *Service) Configure() {
 
 	cfg := ServiceConfig{}
 	err = yaml.Unmarshal(yfile, &cfg)
-    if err != nil {
-        srv.Log.Fatalf("error: %v", err)
-    }
+	if err != nil {
+		srv.Log.Fatalf("error: %v", err)
+	}
 
 	//подключаемся к БД
 
-	connectionString := "host="
-	connectionString += cfg.Gorm_config.Host +
+	postgresConfig := "host="
+	postgresConfig += cfg.Gorm_config.Host +
 		" user=" + cfg.Gorm_config.User +
 		" password=" + cfg.Gorm_config.Password +
-		" dbname=" + cfg.Gorm_config.DBName +
+		" dbname=" + cfg.Gorm_config.DB +
 		" port=" + cfg.Gorm_config.Port
-	DB, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{})
+	DB, err := gorm.Open(postgres.Open(postgresConfig), &gorm.Config{})
 	if err != nil {
 		srv.Log.Fatal(err)
 	}
-	DB.Debug()
+
+	DB.Debug() //FIXME
+
+	//Создаем очередь и подписываемся для просулшивания сообщений
+	rabbitConfig := "amqp://" +
+	cfg.Rabbit_config.User +
+	":" + cfg.Rabbit_config.Password +
+	"@" + cfg.Rabbit_config.Host +
+	":" + cfg.Rabbit_config.Port
+	
+	con, err := amqp.Dial(rabbitConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	defer con.Close()
+
+	ch, err := con.Channel()
+	if err != nil {
+		panic(err)
+	}
+	defer ch.Close()
+
+	msgs, err := ch.Consume(
+		"",//FIXME: add queue
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	forever := make(chan bool)
+	go func(){
+		for req := range msgs {
+
+			//обработчик сообщений, котоырй вызывает соответствующий запрос из апи
+			fmt.Println(req)
+		}
+	}()
+
+	<-forever
+
 }
 
-
 type ServiceConfig struct {
-	Gorm_config GormConfig
+	Gorm_config   GormConfig
+	Rabbit_config RabbitConfig
 }
 type GormConfig struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
-	DBName   string `yaml:"dbname"`
+	DB       string `yaml:"db"`
+}
+
+type RabbitConfig struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
 }

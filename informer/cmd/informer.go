@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Tree/lib/service"
+	lib "Tree/lib/service"
 )
 
 //main
@@ -11,9 +11,5 @@ func main() {
 
 	srv.Configure()
 	srv.Start()
-	// newPerson := models.Person{
 
-	// }
-	// srv.DB.Table(newPerson.GetTableName()).Select("*").First(&newPerson)
-	// fmt.Println(newPerson)
 }
