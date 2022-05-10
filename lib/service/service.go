@@ -7,7 +7,6 @@
 package lib
 
 import (
-	"fmt"
 	"io/ioutil"
 
 	"Tree/lib/log"
@@ -29,18 +28,46 @@ func (srv *Service) SetName(name string) {
 
 func (srv *Service) Start() {
 
-	//TODO: 3)подписываемся на очередь запросов и слушаем
-
 	srv.Log.Infof("Start of %s", srv.Name)
 	defer srv.Log.Infof("Finish of %s", srv.Name)
 
+	_, err := srv.RabbitChannel.QueueDeclare(
+		srv.Name+"-queue",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
 	//Читаем сообщение и вызываем соответствующий запрос / возвращаем ошибку, если запрсоа нет
+	msgs, err := srv.RabbitChannel.Consume(
+		srv.Name+"-queue",
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		srv.Log.Fatal(err)
+	}
 
+	forever := make(chan bool)
+	go func() {
+		for req := range msgs {
+
+			//обработчик сообщений, котоырй вызывает соответствующий запрос из апи
+			srv.Log.Info(req)
+		}
+	}()
+	<-forever
 }
 
 type Properties struct {
-	Name string
-	DB   *gorm.DB
+	Name          string
+	DB            *gorm.DB //TODO: move out
+	RabbitChannel *amqp.Channel
 }
 
 func (srv *Service) Configure() {
@@ -76,47 +103,23 @@ func (srv *Service) Configure() {
 
 	//Создаем очередь и подписываемся для просулшивания сообщений
 	rabbitConfig := "amqp://" +
-	cfg.Rabbit_config.User +
-	":" + cfg.Rabbit_config.Password +
-	"@" + cfg.Rabbit_config.Host +
-	":" + cfg.Rabbit_config.Port
-	
+		cfg.Rabbit_config.User +
+		":" + cfg.Rabbit_config.Password +
+		"@" + cfg.Rabbit_config.Host +
+		":" + cfg.Rabbit_config.Port + "/"
+
 	con, err := amqp.Dial(rabbitConfig)
 	if err != nil {
-		panic(err)
+		srv.Log.Fatal(err)
 	}
 
-	defer con.Close()
+	//defer con.Close()
 
-	ch, err := con.Channel()
+	srv.RabbitChannel, err = con.Channel()
 	if err != nil {
-		panic(err)
+		srv.Log.Fatal(err)
 	}
-	defer ch.Close()
-
-	msgs, err := ch.Consume(
-		"",//FIXME: add queue
-		"",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	forever := make(chan bool)
-	go func(){
-		for req := range msgs {
-
-			//обработчик сообщений, котоырй вызывает соответствующий запрос из апи
-			fmt.Println(req)
-		}
-	}()
-
-	<-forever
+	//defer srv.RabbitChannel.Close()
 
 }
 

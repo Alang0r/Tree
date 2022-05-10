@@ -1,6 +1,7 @@
 TODO:   docker-compose
-        postgres в докере
-        nats в докере
+       + postgres в докере
+       + rabbitmq в докере 
+        передача сообщений
         ошибки
         Запросы:
             -создание человека
