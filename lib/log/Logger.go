@@ -1,36 +1,38 @@
 package log
 
 import (
-	"go.uber.org/zap"
-)	
+	"os"
+
+	"github.com/rs/zerolog"
+)
 
 type Logger struct {
-	zl zap.SugaredLogger
 	Service string
+	log     zerolog.Logger
 }
 
-
-func (logger *Logger) Init(service string)  {
-	log, _ := zap.NewProduction()
-	defer log.Sync()
-	logger.zl = *log.Sugar()
+func (logger *Logger) Init(service string) {
+	logger.log = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr,
+		TimeFormat: "2006-01-02 15:04:05 MST"}).With().
+		Timestamp().
+		Logger()
 }
 
-func (logger *Logger) Errorf(template string, args...interface{})  {
-	logger.zl.Errorf(template,args...)
+func (logger *Logger) Errorf(template string, args ...interface{}) {
+	logger.log.Error().Msgf(template, args...)
 }
 
-func (logger *Logger) Infof(template string, args...interface{})  {
-	logger.zl.Infof(template, args...)
+func (logger *Logger) Infof(template string, args ...interface{}) {
+	logger.log.Info().Msgf(template, args...)
 }
-func (logger *Logger) Info(args...interface{})  {
-	logger.zl.Info(args...)
-}
-
-func (logger *Logger) Fatalf(template string, args...interface{})  {
-	logger.zl.Fatalf(template, args...)
+func (logger *Logger) Info(msg string) {
+	logger.log.Info().Msg(msg)
 }
 
-func (logger *Logger) Fatal(args...interface{})  {
-	logger.zl.Fatal(args...)
+func (logger *Logger) Fatalf(template string, args ...interface{}) {
+	logger.log.Fatal().Msgf(template, args...)
+}
+
+func (logger *Logger) Fatal(msg string) {
+	logger.log.Fatal().Msg(msg)
 }

@@ -11,5 +11,4 @@ func main() {
 
 	srv.Configure()
 	srv.Start()
-
 }

@@ -40,7 +40,7 @@ func (srv *Service) Start() {
 		false,
 		nil,
 	)
-	
+
 	//Читаем сообщение и вызываем соответствующий запрос / возвращаем ошибку, если запрсоа нет
 	msgs, err := srv.RabbitChannel.Consume(
 		srv.Name+"-queue",
@@ -52,7 +52,7 @@ func (srv *Service) Start() {
 		nil,
 	)
 	if err != nil {
-		srv.Log.Fatal(err)
+		srv.Log.Fatal(err.Error())
 	}
 
 	forever := make(chan bool)
@@ -60,7 +60,7 @@ func (srv *Service) Start() {
 		for req := range msgs {
 
 			//обработчик сообщений, котоырй вызывает соответствующий запрос из апи
-			srv.Log.Info(req)
+			srv.Log.Info(string(req.Body))
 		}
 	}()
 	<-forever
@@ -76,10 +76,12 @@ func (srv *Service) Configure() {
 	//Инициализируем логи
 	srv.Log.Init(srv.Name)
 
+	srv.Log.Info("Configuration...")
+	defer srv.Log.Info("Configuration complete.")
 	//загружаем настройки
 	yfile, err := ioutil.ReadFile("config.yaml")
 	if err != nil {
-		srv.Log.Fatal(err)
+		srv.Log.Fatal(err.Error())
 	}
 
 	cfg := ServiceConfig{}
@@ -98,7 +100,7 @@ func (srv *Service) Configure() {
 		" port=" + cfg.Gorm_config.Port
 	DB, err := gorm.Open(postgres.Open(postgresConfig), &gorm.Config{})
 	if err != nil {
-		srv.Log.Fatal(err)
+		srv.Log.Fatal(err.Error())
 	}
 
 	DB.Debug() //FIXME
@@ -112,14 +114,14 @@ func (srv *Service) Configure() {
 
 	con, err := amqp.Dial(rabbitConfig)
 	if err != nil {
-		srv.Log.Fatal(err)
+		srv.Log.Fatal(err.Error())
 	}
 
 	//defer con.Close()
 
 	srv.RabbitChannel, err = con.Channel()
 	if err != nil {
-		srv.Log.Fatal(err)
+		srv.Log.Fatal(err.Error())
 	}
 	//defer srv.RabbitChannel.Close()
 
@@ -143,3 +145,4 @@ type RabbitConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 }
+
