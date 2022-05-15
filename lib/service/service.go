@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"time"
 
@@ -25,44 +26,51 @@ func (srv *Service) SetName(name string) {
 	srv.Name = name
 }
 
+
+
 func (srv *Service) Start() {
 
-	srv.Log.Infof("Start of %s", srv.Name)
-	defer srv.Log.Infof("Finish of %s", srv.Name)
+		srv.Log.Infof("Start of %s", srv.Name)
+		defer srv.Log.Infof("Finish of %s", srv.Name)
 
-	//создаем очередь, если не было ранее
-	_, err := srv.RabbitChannel.QueueDeclare(
-		srv.Name+"-queue",
-		false,
-		false,
-		false,
-		false,
-		nil,
-	)
-
-	//Читаем сообщение и вызываем соответствующий запрос / возвращаем ошибку, если запрсоа нет
-	msgs, err := srv.RabbitChannel.Consume(
-		srv.Name+"-queue",
-		"",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		srv.Log.Fatal(err.Error())
-	}
-
-	forever := make(chan bool)
-	go func() {
-		for req := range msgs {
-
-			//обработчик сообщений, котоырй вызывает соответствующий запрос из апи
-			srv.Log.Info(string(req.Body))
+		//создаем очередь, если не было ранее
+		_, err := srv.RabbitChannel.QueueDeclare(
+			srv.Name+"-queue",
+			false,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			srv.Log.Fatal(err.Error())
 		}
-	}()
-	<-forever
+
+		//Читаем сообщение и вызываем соответствующий запрос / возвращаем ошибку, если запрсоа нет
+		msgs, err := srv.RabbitChannel.Consume(
+			srv.Name+"-queue",
+			"",
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			srv.Log.Fatal(err.Error())
+		}
+
+		forever := make(chan bool)
+		go func() {
+			for req := range msgs {
+
+				//обработчик сообщений, котоырй вызывает соответствующий запрос из апи
+				srv.Log.Info(string(req.Body))
+				var data map[string]interface{}
+				_ = json.Unmarshal(req.Body, &data)
+			}
+		}()
+		<-forever
 }
 
 type Properties struct {
@@ -73,7 +81,7 @@ type Properties struct {
 
 func (srv *Service) Configure() {
 	//Инициализируем логи
-	srv.Log.Init(srv.Name)
+	srv.Log.Init()
 
 	srv.Log.Info("Configuration...")
 	defer srv.Log.Info("Configuration complete.")
@@ -118,7 +126,6 @@ func (srv *Service) Configure() {
 
 	//пытаемся подключиться 3 раза с паузой 5 секунд
 	for i:=0; i < tries ; i++ {
-		time.Sleep(delay * time.Second)
 		con, err := amqp.Dial(rabbitConfig)
 		
 		if err != nil {

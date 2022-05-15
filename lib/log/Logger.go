@@ -7,11 +7,10 @@ import (
 )
 
 type Logger struct {
-	Service string
 	log     zerolog.Logger
 }
 
-func (logger *Logger) Init(service string) {
+func (logger *Logger) Init() {
 	logger.log = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr,
 		TimeFormat: "2006-01-02 15:04:05 MST"}).With().
 		Timestamp().

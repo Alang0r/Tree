@@ -2,18 +2,25 @@ package api
 
 import (
 	"Tree/informer/models"
-	lib "Tree/lib/service"
+	s "Tree/lib/service"
+)
+const(
+	RequestName = "Informer/person/create"
 )
 
-type reqPersonCreate struct {
-	person models.Person
+type ReqPersonCreate struct {
+	s.Header
+	Person models.Person
 }
 
-type rplPersonCreate struct {
+type RplPersonCreate struct {
 	err error
 }
 
-func (req *reqPersonCreate) Execute() {
-	outerReq := lib.CrossServiceRequest{}
-	outerReq.Send()
+func (req *ReqPersonCreate) Init() {
+	req.Name = RequestName
+}
+
+func (req *ReqPersonCreate) Execute() {
+	
 }
