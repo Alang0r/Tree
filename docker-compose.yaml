@@ -1,0 +1,44 @@
+version: "3.7"
+services:
+  postgres:
+    image: postgres:14.2-alpine
+    container_name: 'tree-postgres'
+    environment:
+      - POSTGRES_USER=woody
+      - POSTGRES_PASSWORD=woodpecker
+      - POSTGRES_DB=tree
+  
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'tree-rabbitmq'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    # volumes:
+    #     - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+    #     - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    # networks:
+    #     - rabbitmq_go_net
+
+
+  informer:
+    container_name: 'tree-informer'
+    restart: on-failure
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+    - "8080:8080"
+    environment:
+      - DB_SOURCE=postgresql://woody:woodpecker@postgres:5432/tree?sslmode=disable.
+    # depends_on:
+    #   - postgres
+    #   - rabbitmq
+    entrypoint:
+      ["/app/wait-for.sh", "postgres:5432", "--", "/app/start.sh"]
+    command:
+      ["/app/informer"]
+
+# networks:
+#   rabbitmq_go_net:
+#     driver: bridge

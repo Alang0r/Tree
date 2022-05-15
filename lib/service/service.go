@@ -1,13 +1,8 @@
-//TODO:
-/*Логи
-Натс
-Подключение к БД
-*/
-
 package lib
 
 import (
 	"io/ioutil"
+	"time"
 
 	"Tree/lib/log"
 
@@ -21,6 +16,10 @@ type Service struct {
 	Properties
 	Log log.Logger
 }
+const(
+	tries = 3
+	delay = 5
+)
 
 func (srv *Service) SetName(name string) {
 	srv.Name = name
@@ -79,10 +78,12 @@ func (srv *Service) Configure() {
 	srv.Log.Info("Configuration...")
 	defer srv.Log.Info("Configuration complete.")
 	//загружаем настройки
+	srv.Log.Info("Loading config...")
 	yfile, err := ioutil.ReadFile("config.yaml")
 	if err != nil {
 		srv.Log.Fatal(err.Error())
 	}
+	srv.Log.Info("Config loaded")
 
 	cfg := ServiceConfig{}
 	err = yaml.Unmarshal(yfile, &cfg)
@@ -91,7 +92,7 @@ func (srv *Service) Configure() {
 	}
 
 	//подключаемся к БД
-
+	srv.Log.Info("Connecting Postgres...")
 	postgresConfig := "host="
 	postgresConfig += cfg.Gorm_config.Host +
 		" user=" + cfg.Gorm_config.User +
@@ -102,27 +103,45 @@ func (srv *Service) Configure() {
 	if err != nil {
 		srv.Log.Fatal(err.Error())
 	}
+	srv.Log.Info("Postgres connected.")
+	//FIXME: проверить, нужно ли джелать миграции
 
 	DB.Debug() //FIXME
 
 	//Создаем очередь и подписываемся для просулшивания сообщений
+	srv.Log.Info("Connecting RabbitMQ...")
 	rabbitConfig := "amqp://" +
 		cfg.Rabbit_config.User +
 		":" + cfg.Rabbit_config.Password +
 		"@" + cfg.Rabbit_config.Host +
 		":" + cfg.Rabbit_config.Port + "/"
 
-	con, err := amqp.Dial(rabbitConfig)
-	if err != nil {
-		srv.Log.Fatal(err.Error())
-	}
+	//пытаемся подключиться 3 раза с паузой 5 секунд
+	for i:=0; i < tries ; i++ {
+		time.Sleep(delay * time.Second)
+		con, err := amqp.Dial(rabbitConfig)
+		
+		if err != nil {
+			if err == amqp.ErrClosed {
+				time.Sleep(delay * time.Second)
+				continue
+			} else {
+				srv.Log.Fatal(err.Error())
+			}
+		}
 
-	//defer con.Close()
-
-	srv.RabbitChannel, err = con.Channel()
-	if err != nil {
-		srv.Log.Fatal(err.Error())
+		srv.RabbitChannel, err = con.Channel()
+		if err != nil {
+			if err == amqp.ErrClosed {
+				time.Sleep(delay * time.Second)
+				continue
+			} else {
+				srv.Log.Fatal(err.Error())
+			}
+		}
 	}
+	srv.Log.Info("RabbitMQ connected")
+	
 	//defer srv.RabbitChannel.Close()
 
 }

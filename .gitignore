@@ -1,12 +1,7 @@
 informer/cmd/config.yaml
 tester/cmd/config.yaml
-docker-compose.yml
 main.dockerfile
 readme.md
-docker-compose.yml.example
 config.yaml
 app.env
-docker-compose.yaml
 docker-compose.yml.old
-Dockerfile
-start.sh
