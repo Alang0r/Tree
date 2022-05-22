@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"Tree/lib/log"
+	"Tree/lib/request"
 
 	"github.com/streadway/amqp"
 	"gopkg.in/yaml.v3"
@@ -64,8 +65,8 @@ func (srv *Service) Start() {
 		go func() {
 			for req := range msgs {
 
-				//обработчик сообщений, котоырй вызывает соответствующий запрос из апи
-				srv.Log.Info(string(req.Body))
+				//обработчик сообщений, который вызывает соответствующий запрос из апи
+				srv.Log.Info("New request: " + string(req.Body))
 				var data map[string]interface{}
 				_ = json.Unmarshal(req.Body, &data)
 			}
@@ -148,7 +149,6 @@ func (srv *Service) Configure() {
 		}
 	}
 	srv.Log.Info("RabbitMQ connected")
-	
 	//defer srv.RabbitChannel.Close()
 
 }
@@ -170,5 +170,9 @@ type RabbitConfig struct {
 	Port     string `yaml:"port"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
+}
+
+func (srv *Service) Serve(req request.Request) {
+	req.Execute()
 }
 
