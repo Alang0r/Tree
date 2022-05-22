@@ -1,3 +1,9 @@
+//TODO: когда запускается сервис, в нем создается мапа 
+//map["RequestName"] RequestType со всеми типами запросов
+//когда приходит запрос, анмаршелим его в reqmap[request], т.к. запрос у нас в хедере
+//if !ok reqmap["request"] return error запроса нет
+//иначе дергаем из запроса execute
+
 package lib
 
 import (
