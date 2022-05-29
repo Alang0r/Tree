@@ -1,6 +1,8 @@
 package main
 
 import (
+	"Informer/api"
+	"Tree/informer/api"
 	lib "Tree/lib/service"
 )
 
@@ -10,5 +12,6 @@ func main() {
 	srv.SetName("Informer")
 
 	srv.Configure()
+	srv.RegisterRequest("ReqPersonCreate", api.ReqPersonCreate)
 	srv.Start()
 }

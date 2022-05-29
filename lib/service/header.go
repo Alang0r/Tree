@@ -12,14 +12,14 @@ import (
 	// "github.com/streadway/amqp"
 )
 
-type Header struct {
-	// //Header ReqHeader//TODO: ADD crypto
-	// RabbitChannel *amqp.Channel
-	RequestID            string
-	RequestName          string
-	// To            string //destination service
-	// Request       interface{}
-}
+// type Header struct {
+// 	// //Header ReqHeader//TODO: ADD crypto
+// 	// RabbitChannel *amqp.Channel
+// 	RequestID            string
+// 	RequestName          string
+// 	// To            string //destination service
+// 	// Request       interface{}
+// }
 
 // //Send post request to RabbitMQ queue
 // func (req *Header) Send() {

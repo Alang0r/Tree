@@ -107,6 +107,7 @@ func (srv *Service) Start() {
 				srv.Log.Infof("New request: %v", data)
 				//все запросы, которые есть в сервисе хранятся в мапе
 				//в data будет название запроса
+				//srv.Requests["ReqPersonCreate"].Run()
 				//заполняем структуру запроса с соответствующим именем
 				//затем вызываем его метод из мапы
 
@@ -198,7 +199,7 @@ func (srv *Service) RegisterRequest(reqname string, req Requestt) {
 	srv.Requests[reqname] = req
 }
 type Requestt interface {
-	Prepare()
+	GetInfo() string
 	Run() error
 }
 
