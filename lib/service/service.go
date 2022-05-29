@@ -1,4 +1,4 @@
-//TODO: когда запускается сервис, в нем создается мапа 
+//TODO: когда запускается сервис, в нем создается мапа
 //map["RequestName"] RequestType со всеми типами запросов
 //когда приходит запрос, анмаршелим его в reqmap[request], т.к. запрос у нас в хедере
 //if !ok reqmap["request"] return error запроса нет
@@ -10,9 +10,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"time"
+	"reflect"
+	"errors"
+	"fmt"
 
 	"Tree/lib/log"
-	"Tree/lib/request"
+	//"Tree/lib/request"
 
 	"github.com/streadway/amqp"
 	"gopkg.in/yaml.v3"
@@ -24,6 +27,34 @@ type Service struct {
 	Properties
 	Log log.Logger
 }
+
+type Properties struct {
+	Name          string
+	DB            *gorm.DB //TODO: move out
+	RabbitChannel *amqp.Channel
+	Requests map[string] Requestt
+}
+
+type ServiceConfig struct {
+	Gorm_config   GormConfig
+	Rabbit_config RabbitConfig
+}
+
+type GormConfig struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	DB       string `yaml:"db"`
+}
+
+type RabbitConfig struct {
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+}
+
 const(
 	tries = 3
 	delay = 5
@@ -32,8 +63,6 @@ const(
 func (srv *Service) SetName(name string) {
 	srv.Name = name
 }
-
-
 
 func (srv *Service) Start() {
 
@@ -72,18 +101,18 @@ func (srv *Service) Start() {
 			for req := range msgs {
 
 				//обработчик сообщений, который вызывает соответствующий запрос из апи
-				srv.Log.Info("New request: " + string(req.Body))
+				srv.Log.Infof("New request: %s", string(req.Body))
 				var data map[string]interface{}
 				_ = json.Unmarshal(req.Body, &data)
+				srv.Log.Infof("New request: %v", data)
+				//все запросы, которые есть в сервисе хранятся в мапе
+				//в data будет название запроса
+				//заполняем структуру запроса с соответствующим именем
+				//затем вызываем его метод из мапы
+
 			}
 		}()
 		<-forever
-}
-
-type Properties struct {
-	Name          string
-	DB            *gorm.DB //TODO: move out
-	RabbitChannel *amqp.Channel
 }
 
 func (srv *Service) Configure() {
@@ -155,30 +184,53 @@ func (srv *Service) Configure() {
 		}
 	}
 	srv.Log.Info("RabbitMQ connected")
-	//defer srv.RabbitChannel.Close()
 
 }
 
-type ServiceConfig struct {
-	Gorm_config   GormConfig
-	Rabbit_config RabbitConfig
-}
-type GormConfig struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	DB       string `yaml:"db"`
+
+
+func (s *Service) Serve(reqName string) error {
+	s.Requests[reqName].Run()
+	return nil
 }
 
-type RabbitConfig struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+func (srv *Service) RegisterRequest(reqname string, req Requestt) {
+	srv.Requests[reqname] = req
+}
+type Requestt interface {
+	Prepare()
+	Run() error
 }
 
-func (srv *Service) Serve(req request.Request) {
-	req.Execute()
+//FillStruct fill request struct with map from rabbitmq
+func FillStruct(m map[string]interface{}, req interface{}) error {
+    for k, v := range m {
+        err := SetField(req, k, v)
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
+func SetField(obj interface{}, name string, value interface{}) error {
+    structValue := reflect.ValueOf(obj).Elem()
+    structFieldValue := structValue.FieldByName(name)
+
+    if !structFieldValue.IsValid() {
+        return fmt.Errorf("No such field: %s in obj", name)
+    }
+
+    if !structFieldValue.CanSet() {
+        return fmt.Errorf("Cannot set %s field value", name)
+    }
+
+    structFieldType := structFieldValue.Type()
+    val := reflect.ValueOf(value)
+    if structFieldType != val.Type() {
+        return errors.New("Provided value type didn't match obj field type")
+    }
+
+    structFieldValue.Set(val)
+    return nil
+}
